@@ -1,0 +1,91 @@
+---
+title: "Web Scraping"
+output:
+  html_document:
+    df_print: paged
+---
+
+## Introduction
+
+We're going to try and scrape class schedules from the CSU website.
+We'll start by using Dr. Buffardi's include function, because I'm just not certain that I have all the necessary libraries installed that I need, but this function will guarentee that I do.
+
+```{r}
+include <- function(library_name){
+  if ( !(library_name %in% installed.packages()))
+    install.packages((library_name))
+  library(library_name, character.only = TRUE)
+}
+include("rvest")
+include("tidyr")
+```
+
+## Setup
+We're going to create variables of the different schedules we want to scrape for easy handling once we have created our webscraping function. We do this by creating a variable name (in our case we're just going to refer to them by their major and semester) and call `read_html()` on them.
+```{r}
+
+csciSpring2019 <-read_html("http://ems.csuchico.edu/APSS/schedule/spr2019/CSCI.shtml")
+
+csciSpring2020 <-read_html("http://ems.csuchico.edu/APSS/schedule/spr2020/CSCI.shtml")
+
+
+mathSpring2019 <-read_html("http://ems.csuchico.edu/APSS/schedule/spr2019/MATH.shtml")
+
+mathSpring2020 <-read_html("http://ems.csuchico.edu/APSS/schedule/spr2020/MATH.shtml")
+
+```
+
+
+# Identifying sections
+We can identify sections by inspecting the webpage with the webpage inspector. It will tell us what the types that we are looking for are.
+
+```{r}
+read_class_schedule <- function(url){
+
+  table <- url %>% html_nodes("table")
+
+  class_number <- table %>% 
+                html_nodes("td.cat_num") %>% 
+                html_text() %>%
+                as.integer()
+  
+  section_number <- table %>% 
+                html_nodes("td.sect") %>% 
+                html_text() %>%
+                as.integer()
+  
+  course_title <- table %>% 
+                html_nodes("td.title") %>% 
+                html_text() %>%
+                as.character()
+
+  instructor <- table %>% 
+                html_nodes("td.Instructor") %>% 
+                html_text() %>%
+                as.character()
+
+  enrollment <- table %>% 
+                html_nodes("td.enrtot") %>% 
+                html_text() %>%
+                as.integer()
+
+  schedule <- tibble(class= class_number, section= section_number, course = course_title, instructor= instructor, enrollment = enrollment)
+
+
+return(schedule)
+}
+  
+```
+
+
+
+## Testing and Printing
+We want call all our URLs from above and exhibit them each as a _tibble_.
+
+```{r}
+read_class_schedule(csciSpring2019)
+read_class_schedule(mathSpring2019)
+read_class_schedule(csciSpring2020)
+read_class_schedule(mathSpring2020)
+```
+
